@@ -8,6 +8,8 @@ from torchvision import transforms
 from config import IMG_DIR
 from config import pickle_file
 
+import torch
+
 # Data augmentation and normalization for training
 # Just normalization for validation
 data_transforms = {
@@ -65,11 +67,15 @@ class ArcFaceDataset(Dataset):
 def batched_collate_fn(batch):
 
     imgs,targets = zip(*batch)
+
+    #print( imgs[0].shape)
+    imgs = [item for sublist in imgs for item in sublist]
+    targets = [item for sublist in targets for item in sublist]
     return torch.cat(imgs),torch.cat(targets)
 
 
 class ArcFaceDatasetBatched(Dataset):
-    def __init__(self, split, img_batch_size: int = 64, collate_fn = batched_collate_fn):
+    def __init__(self, split, img_batch_size: int = 64, collate_fn = batched_collate_fn, pickle_file = pickle_file):
         with open(pickle_file, 'rb') as file:
             data = pickle.load(file)
 
@@ -93,3 +99,15 @@ class ArcFaceDatasetBatched(Dataset):
 
     def __len__(self):
         return len(self.samples)
+
+
+if __name__ == "__main__":
+    img_batch_size = 128
+    train_dataset = ArcFaceDatasetBatched('train', img_batch_size, pickle_file = "data/7812.pkl")
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=256 // img_batch_size, shuffle=True,
+                                               num_workers=1)
+
+    #print([x.shape for x in next(iter(train_loader))])
+    a = next(iter(train_loader))
+    print(len(a[0]), a[0][0].shape, len(a[1]))
+    print(batched_collate_fn([a,a])[1].shape)
