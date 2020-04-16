@@ -19,14 +19,16 @@ checkpoint = None  # path to checkpoint, None if none
 # Data parameters
 num_classes = 85742
 num_samples = 5822653
-DATA_DIR = 'data'
+DATA_DIR = '/datadrive/data'
 # faces_ms1m_folder = 'data/faces_ms1m_112x112'
 # faces_ms1m_folder = 'data/ms1m-retinaface-t1'
-faces_ms1m_folder = 'data/faces_emore'
+faces_ms1m_folder = DATA_DIR + '/faces_emore'
 path_imgidx = os.path.join(faces_ms1m_folder, 'train.idx')
 path_imgrec = os.path.join(faces_ms1m_folder, 'train.rec')
-IMG_DIR = 'data/images'
-pickle_file = 'data/faces_ms1m_112x112.pickle'
+IMG_DIR = DATA_DIR + '/images'
+pickle_file = DATA_DIR + '/faces_ms1m_112x112.pickle'
+
+img_batch_size = 128
 
 
 def get_logger():

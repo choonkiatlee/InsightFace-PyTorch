@@ -4,7 +4,7 @@ from torch import nn
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.tensorboard import SummaryWriter
 
-from config import device, grad_clip, print_freq, num_workers, logger
+from config import device, grad_clip, print_freq, num_workers, logger, img_batch_size
 from data_gen import ArcFaceDataset
 from focal_loss import FocalLoss
 from megaface_eval import megaface_test
@@ -69,8 +69,11 @@ def train_net(args):
         criterion = nn.CrossEntropyLoss()
 
     # Custom dataloaders
-    train_dataset = ArcFaceDataset('train')
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
+    # train_dataset = ArcFaceDataset('train')
+    # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
+    #                                            num_workers=num_workers)
+    train_dataset = ArcFaceDatasetBatched('train', img_batch_size)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size // img_batch_size, shuffle=True,
                                                num_workers=num_workers)
 
     scheduler = MultiStepLR(optimizer, milestones=[8, 16, 24, 32], gamma=0.1)
