@@ -5,10 +5,12 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.tensorboard import SummaryWriter
 
 from config import device, grad_clip, print_freq, num_workers, logger, img_batch_size
-from data_gen import ArcFaceDataset
+from data_gen import ArcFaceDataset, ArcFaceDatasetBatched, batched_collate_fn
 from focal_loss import FocalLoss
 from models import resnet18, resnet34, resnet50, resnet101, resnet152, ArcMarginModel
 from utils import parse_args, save_checkpoint, AverageMeter, accuracy, clip_gradient
+
+import time
 
 
 def train_net(args):
@@ -73,7 +75,7 @@ def train_net(args):
     #                                            num_workers=num_workers)
     train_dataset = ArcFaceDatasetBatched('train', img_batch_size)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size // img_batch_size, shuffle=True,
-                                               num_workers=num_workers)
+                                               num_workers=num_workers, collate_fn = batched_collate_fn)
 
     scheduler = MultiStepLR(optimizer, milestones=[8, 16, 24, 32], gamma=0.1)
 
@@ -97,22 +99,32 @@ def train_net(args):
 
         scheduler.step(epoch)
 
-        if not args.without_megaface_eval:
-            
+
+        if args.eval_ds == "LFW":
+            from lfw_eval import lfw_test
+
+            # One epochs's validata
+            accuracy, threshold = lfw_test(model)
+
+        elif args.eval_ds == "Megaface":
             from megaface_eval import megaface_test
 
-            # One epoch's validation
-            megaface_acc = megaface_test(model)
-            writer.add_scalar('model/megaface_accuracy', megaface_acc, epoch)
+            accuracy = megaface_test(model)
+        
+        else:
+            accuracy = -1
 
-            # Check if there was an improvement
-            is_best = megaface_acc > best_acc
-            best_acc = max(megaface_acc, best_acc)
-            if not is_best:
-                epochs_since_improvement += 1
-                logger.info("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
-            else:
-                epochs_since_improvement = 0
+        writer.add_scalar('model/evaluation_accuracy', accuracy, epoch)
+
+        # Check if there was an improvement
+        is_best = accuracy > best_acc
+        best_acc = max(accuracy, best_acc)
+        if not is_best:
+            epochs_since_improvement += 1
+            logger.info("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
+        else:
+            epochs_since_improvement = 0
+
 
         # Save checkpoint
         save_checkpoint(epoch, epochs_since_improvement, model, metric_fc, optimizer, best_acc, is_best, scheduler)
@@ -126,7 +138,9 @@ def train(train_loader, model, metric_fc, criterion, optimizer, epoch):
     top1_accs = AverageMeter()
 
     # Batches
+    tic = time.time()
     for i, (img, label) in enumerate(train_loader):
+
         # Move to GPU, if available
         img = img.to(device)
         label = label.to(device)  # [N, 1]
@@ -155,11 +169,20 @@ def train(train_loader, model, metric_fc, criterion, optimizer, epoch):
 
         # Print status
         if i % print_freq == 0:
+
+            toc = time.time()
+            time_elapsed = toc - tic
+
             logger.info('Epoch: [{0}][{1}/{2}]\t'
                         'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                        'Top1 Accuracy {top1_accs.val:.3f} ({top1_accs.avg:.3f})'.format(epoch, i, len(train_loader),
-                                                                                         loss=losses,
-                                                                                         top1_accs=top1_accs))
+                        'Top1 Accuracy {top1_accs.val:.3f} ({top1_accs.avg:.3f})\t'
+                        'Time Elapsed: {time_elapsed:.3f}s'.format(epoch, i, len(train_loader),
+                                                            loss=losses,
+                                                            top1_accs=top1_accs,
+                                                            time_elapsed=time_elapsed)
+                        )
+
+            tic = time.time()
 
     return losses.avg, top1_accs.avg
 

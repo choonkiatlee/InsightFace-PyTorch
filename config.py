@@ -4,6 +4,7 @@ import os
 import torch
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # sets device for model and PyTorch tensors
+# device = torch.device('cpu')
 
 # Model parameters
 im_size = 112
@@ -29,6 +30,10 @@ IMG_DIR = DATA_DIR + '/images_batched'
 pickle_file = DATA_DIR + '/faces_ms1m_112x112.pickle'
 
 img_batch_size = 128
+
+LFW_DIR = os.path.join(DATA_DIR, 'LFW')
+
+PRETRAINED_DIR = "pretrained_model"
 
 
 def get_logger():

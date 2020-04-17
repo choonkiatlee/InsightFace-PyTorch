@@ -10,7 +10,6 @@ from align_faces import get_reference_facial_points, warp_and_crop_face
 from config import im_size
 from retinaface.detector import detector
 
-
 def clip_gradient(optimizer, grad_clip):
     """
     Clips gradients computed during backpropagation to avoid explosion of gradients.
@@ -195,7 +194,11 @@ def parse_args():
     parser.add_argument('--use-se', type=bool, default=True, help='use SEBlock')
     parser.add_argument('--full-log', type=bool, default=False, help='full logging')
     parser.add_argument('--checkpoint', type=str, default=None, help='checkpoint')
-    parser.add_argument('--without-megaface-eval', type=bool, default = False, help="Don't evaluate on megaface")
+
+    # Our added arguments
+    parser.add_argument('--eval-ds', type=str, default = "LFW", help="LFW (Default) / Megaface")
+    parser.add_argument('--use-scripted-model', type=bool, default = False, help="Choose to use the saved scripted model")
+    
     args = parser.parse_args()
     return args
 
