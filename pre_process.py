@@ -7,7 +7,7 @@ from mxnet import recordio
 from tqdm import tqdm
 
 from config import path_imgidx, path_imgrec, IMG_DIR, pickle_file, img_batch_size
-from utils import ensure_folder
+#from utils import ensure_folder
 
 import glob
 import numpy as np
@@ -17,6 +17,12 @@ import numpy as np
 # from typing import List, Dict, Set, Generator, Tuple
 # import itertools
 # from functools import partial
+
+def ensure_folder(folder):
+    import os
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+
 
 
 if __name__ == "__main__":
@@ -30,24 +36,35 @@ if __name__ == "__main__":
     samples = []
     class_ids = set()
 
+    ignored_idxs = []
 
     n_batches = 10000000 // img_batch_size
     save_every_x_batches = n_batches // 10
     try:
         # for i in tqdm(range(10000000)):
-        for batch_no in tqdm(range(n_batches)):           
+        for batch_no in tqdm(range(45487, n_batches)):     # 39061       
 
-            filename = '{}.jpg'.format(i)
+            filename = '{}.jpg'.format(batch_no)
             img_list = []
             labels = []
 
-            for img_num in range(img_batch_size):
+            n_processed = 0
+            img_num = 0
+            while n_processed < img_batch_size:
+
+                img_num += 1
+            # for img_num in range(img_batch_size):
 
                 # Read record
                 header, s = recordio.unpack(imgrec.read_idx(batch_no * img_batch_size + img_num + 1))  
 
                 # Process Header
-                label = int(header.label)
+                try:
+                    label = int(header.label)
+                except Exception as err:
+                    # print("Could not convert label, continuing")
+                    continue
+
                 labels.append(label)
                 class_ids.add(label)
 
@@ -57,8 +74,10 @@ if __name__ == "__main__":
 
                 img_list.append(img)
 
+                n_processed += 1
+
             # Save image
-            img = np.hstack(imgs)
+            img = np.hstack(img_list)
             filename = os.path.join(IMG_DIR, filename)
             cv.imwrite(filename, img)
 

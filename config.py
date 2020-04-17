@@ -25,7 +25,7 @@ DATA_DIR = '/datadrive/data'
 faces_ms1m_folder = DATA_DIR + '/faces_emore'
 path_imgidx = os.path.join(faces_ms1m_folder, 'train.idx')
 path_imgrec = os.path.join(faces_ms1m_folder, 'train.rec')
-IMG_DIR = DATA_DIR + '/images'
+IMG_DIR = DATA_DIR + '/images_batched'
 pickle_file = DATA_DIR + '/faces_ms1m_112x112.pickle'
 
 img_batch_size = 128

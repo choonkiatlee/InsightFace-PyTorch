@@ -7,7 +7,6 @@ from torch.utils.tensorboard import SummaryWriter
 from config import device, grad_clip, print_freq, num_workers, logger, img_batch_size
 from data_gen import ArcFaceDataset
 from focal_loss import FocalLoss
-from megaface_eval import megaface_test
 from models import resnet18, resnet34, resnet50, resnet101, resnet152, ArcMarginModel
 from utils import parse_args, save_checkpoint, AverageMeter, accuracy, clip_gradient
 
@@ -96,20 +95,24 @@ def train_net(args):
         writer.add_scalar('model/train_loss', train_loss, epoch)
         writer.add_scalar('model/train_accuracy', train_top1_accs, epoch)
 
-        # One epoch's validation
-        megaface_acc = megaface_test(model)
-        writer.add_scalar('model/megaface_accuracy', megaface_acc, epoch)
-
         scheduler.step(epoch)
 
-        # Check if there was an improvement
-        is_best = megaface_acc > best_acc
-        best_acc = max(megaface_acc, best_acc)
-        if not is_best:
-            epochs_since_improvement += 1
-            logger.info("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
-        else:
-            epochs_since_improvement = 0
+        if not args.without_megaface_eval:
+            
+            from megaface_eval import megaface_test
+
+            # One epoch's validation
+            megaface_acc = megaface_test(model)
+            writer.add_scalar('model/megaface_accuracy', megaface_acc, epoch)
+
+            # Check if there was an improvement
+            is_best = megaface_acc > best_acc
+            best_acc = max(megaface_acc, best_acc)
+            if not is_best:
+                epochs_since_improvement += 1
+                logger.info("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
+            else:
+                epochs_since_improvement = 0
 
         # Save checkpoint
         save_checkpoint(epoch, epochs_since_improvement, model, metric_fc, optimizer, best_acc, is_best, scheduler)

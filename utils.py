@@ -195,6 +195,7 @@ def parse_args():
     parser.add_argument('--use-se', type=bool, default=True, help='use SEBlock')
     parser.add_argument('--full-log', type=bool, default=False, help='full logging')
     parser.add_argument('--checkpoint', type=str, default=None, help='checkpoint')
+    parser.add_argument('--without-megaface-eval', type=bool, default = False, help="Don't evaluate on megaface")
     args = parser.parse_args()
     return args
 
