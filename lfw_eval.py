@@ -361,7 +361,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     if args.use_scripted_model:
-        model = torch.jit.load(os.path.join(PRETRAINED_DIR, args.network, 'scripted_model.zip'))
+        model = torch.jit.load(os.path.join(PRETRAINED_DIR, args.network, 'scripted_model.pt'))
 
     else:
         if args.network == "r101":

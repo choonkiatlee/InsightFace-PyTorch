@@ -8,3 +8,7 @@ venv/
 
 images/*_f*.jpg
 pretrained_model/r101/
+data/
+
+test.jpg
+convert_img_batch_size.py

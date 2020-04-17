@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     print("Saving Model")
     if args.network == "r101":
-        scripted_model.save('pretrained_model/r101/scripted_model.zip')
+        scripted_model.save('pretrained_model/r101/scripted_model.pt')
     elif args.network == "mfacenet":
-        scripted_model.save('pretrained_model/mfacenet/scripted_model.zip')
+        scripted_model.save('pretrained_model/mfacenet/scripted_model.pt')
 
