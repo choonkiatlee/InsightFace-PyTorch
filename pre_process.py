@@ -37,7 +37,7 @@ if __name__ == "__main__":
         # for i in tqdm(range(10000000)):
         for batch_no in tqdm(range(n_batches)):           
 
-            filename = '{}.jpg'.format(i)
+            # filename = '{}.jpg'.format(batch_no)
             img_list = []
             labels = []
 
@@ -58,8 +58,8 @@ if __name__ == "__main__":
                 img_list.append(img)
 
             # Save image
-            img = np.hstack(imgs)
-            filename = os.path.join(IMG_DIR, filename)
+            img = np.hstack(img_list)
+            filename = os.path.join(IMG_DIR, '{}.jpg'.format(batch_no))
             cv.imwrite(filename, img)
 
             samples.append({'img': filename, 'labels': labels})

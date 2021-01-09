@@ -71,6 +71,9 @@ def batched_collate_fn(batch):
     #print( imgs[0].shape)
     imgs = [item for sublist in imgs for item in sublist]
     targets = [item for sublist in targets for item in sublist]
+
+    print(targets)
+
     return torch.cat(imgs),torch.cat(targets)
 
 
