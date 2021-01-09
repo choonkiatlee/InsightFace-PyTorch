@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 from config import IMG_DIR
-from config import pickle_file
+from config import pickle_file, img_batch_size
 
 import torch
 
@@ -22,6 +22,11 @@ data_transforms = {
     'val': transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+    'val_lfw': transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        transforms.Lambda(lambda x: x.transpose())    # Convert from CHW to HWC
     ]),
 }
 
@@ -41,7 +46,7 @@ def split_img(img: Image, img_batch_size: int = 64):
     return imgs
 
 class ArcFaceDataset(Dataset):
-    def __init__(self, split, img_batch_size: int = 64):
+    def __init__(self, split, img_batch_size: int = 64, actual_batch_size: int = 256):
         with open(pickle_file, 'rb') as file:
             data = pickle.load(file)
 
@@ -49,6 +54,7 @@ class ArcFaceDataset(Dataset):
         self.samples = data
         self.transformer = data_transforms['train']
         self.img_batch_size = img_batch_size
+        self.actual_batch_size = actual_batch_size
 
     def __getitem__(self, i):
         sample = self.samples[i]
@@ -66,19 +72,18 @@ class ArcFaceDataset(Dataset):
 
 def batched_collate_fn(batch):
 
-    imgs,targets = zip(*batch)
+    imgs, targets = zip(*batch)
 
-    #print( imgs[0].shape)
+    # Flatten the list in lists
     imgs = [item for sublist in imgs for item in sublist]
     targets = [item for sublist in targets for item in sublist]
 
-    print(targets)
-
-    return torch.cat(imgs),torch.cat(targets)
+    return torch.stack(imgs, dim = 0), torch.tensor(targets)
 
 
 class ArcFaceDatasetBatched(Dataset):
-    def __init__(self, split, img_batch_size: int = 64, collate_fn = batched_collate_fn, pickle_file = pickle_file):
+    def __init__(self, split, img_batch_size: int = 64, pickle_file = pickle_file):
+        
         with open(pickle_file, 'rb') as file:
             data = pickle.load(file)
 
@@ -97,7 +102,6 @@ class ArcFaceDatasetBatched(Dataset):
 
         imgs = split_img(full_img, img_batch_size)
         imgs = [self.transformer(img) for img in imgs]
-
         return imgs, labels
 
     def __len__(self):
@@ -105,12 +109,22 @@ class ArcFaceDatasetBatched(Dataset):
 
 
 if __name__ == "__main__":
-    img_batch_size = 128
-    train_dataset = ArcFaceDatasetBatched('train', img_batch_size, pickle_file = "data/7812.pkl")
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=256 // img_batch_size, shuffle=True,
-                                               num_workers=1)
+
+    # train_dataset = ArcFaceDatasetBatched('train', img_batch_size, pickle_file = "data/7812.pkl")
+    train_dataset = ArcFaceDatasetBatched('train', img_batch_size)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size= 512 // img_batch_size, shuffle=True,
+                                               num_workers=1, collate_fn = batched_collate_fn)
 
     #print([x.shape for x in next(iter(train_loader))])
-    a = next(iter(train_loader))
-    print(len(a[0]), a[0][0].shape, len(a[1]))
-    print(batched_collate_fn([a,a])[1].shape)
+    train_loader_iterable = iter(train_loader)
+    a = next(train_loader_iterable)
+    # a = next(train_loader_iterable)
+
+    import torchvision
+    torchvision.utils.save_image(a[0][0], 'test.jpg')
+
+    # b = train_dataset.__getitem__(5)
+
+    print(len(a[0]), a[0].shape, a[1].shape)
+    # print(len(b[0]), b[0][0].shape, len(b[1]))
+    # print(batched_collate_fn(a)[1].shape)
